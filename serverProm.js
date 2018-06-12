@@ -1,6 +1,6 @@
 let http = require("http");
 let fs = require("fs");
-//cdconst qs = require('querystring');
+const qs = require('querystring');
 
 
 // let promiseReadFile = (path) => { new Promise (
@@ -30,34 +30,48 @@ http.createServer((request, response) => {
             })
         })
     }
-    
-    //readFileProm("index.html","utf8").then((a)=>{(a)})
-    
+
+    function writeFileProm(path, data, coding) {
+        return new Promise((res, rej) => {
+            fs.writeFile(path, data, coding, (err, data) => {
+                if (err) {
+                    rej(err);
+                } else {
+                    res(data);
+                }
+            })
+        })
+    }
 
     if (request.method === "GET" && request.url === "/") {
         console.log(request.url);
         console.log(request.method);
-        readFileProm("index.html","utf8").then((a)=>{(a)}).toString()
+        readFileProm("index.html", "utf8").then((data) => { response.end(data) });
+    } else if (request.method === "POST") {
+        console.log(request.url);
+        console.log(request.method);
+
+        let body = [];
+
+        request.on('data', (chunk) => {
+            body.push(chunk);
+        }).on('end', () => {
+            body = Buffer.concat(body).toString();
+            let formData = qs.parse(body.toString());
+
+            readFileProm("dataOfForm.json", "utf8", ).then((data) => {
+                let oldJsonFileObj = JSON.parse(data);
+                oldJsonFileObj.push(formData);
+                json = JSON.stringify(oldJsonFileObj);
+                return json;
+
+            }).then((data) => {
+                writeFileProm("dataOfForm.json", data, "utf8")
+            });
+
+        });
+        //readFileProm("index.html", "utf8").then((data) => { response.write(data) });
         response.end();
+        
     }
-
-    // if (request.method === "POST") {
-    //     console.log(request.url);
-    //     console.log(request.method);
-
-    //     let body = [];
-
-    //     request.on('data', (chunk) => {
-    //         body.push(chunk);
-    //     }).on('end', () => {
-    //         body = Buffer.concat(body).toString();
-    //         let str = JSON.stringify(qs.parse(body.toString()), null, "\t");
-
-    //         fs.appendFile("dataOfForm.txt", str, "utf8", (err) => {
-    //             if (err) throw err;
-    //             console.log('The "data to append" was appended to file!');
-    //         });
-    //     });
-    //     response.end(html);
-    // }
 }).listen(3000, () => console.log("Server is working"));
